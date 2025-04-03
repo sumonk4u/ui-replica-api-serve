@@ -15,25 +15,28 @@ import NotFound from "./pages/NotFound";
 // Add custom CSS for styling
 import "./styles/custom.css";
 
-const queryClient = new QueryClient();
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Layout><Home /></Layout>} />
-          <Route path="/chat" element={<Layout><Chat /></Layout>} />
-          <Route path="/code-converter" element={<Layout><CodeConverter /></Layout>} />
-          <Route path="/document-ingestion" element={<Layout><DocumentIngestion /></Layout>} />
-          <Route path="/knowledge-base" element={<Layout><KnowledgeBase /></Layout>} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+function App() {
+  // Create a QueryClient instance inside the component
+  const queryClient = new QueryClient();
+  
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Layout><Home /></Layout>} />
+            <Route path="/chat" element={<Layout><Chat /></Layout>} />
+            <Route path="/code-converter" element={<Layout><CodeConverter /></Layout>} />
+            <Route path="/document-ingestion" element={<Layout><DocumentIngestion /></Layout>} />
+            <Route path="/knowledge-base" element={<Layout><KnowledgeBase /></Layout>} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+}
 
 export default App;
