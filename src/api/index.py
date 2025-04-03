@@ -23,6 +23,11 @@ class CodeConversionRequest(BaseModel):
     sourceLanguage: str
     targetLanguage: str
 
+class CodeExplainRequest(BaseModel):
+    code: str
+    language: str
+    model: Optional[str] = "GPT-4 Turbo"
+
 # Chat endpoint
 @app.post("/api/chat")
 async def chat(request: ChatMessage):
@@ -39,6 +44,17 @@ async def convert_code(request: CodeConversionRequest):
         "convertedCode": f"// Converted from {request.sourceLanguage} to {request.targetLanguage}\n// Original code: {request.code}\n\n// This is placeholder converted code",
         "language": request.targetLanguage
     }
+
+# Code explanation endpoint
+@app.post("/api/explain-code")
+async def explain_code(request: CodeExplainRequest):
+    # In a real implementation, this would integrate with an AI service
+    explanation = {
+        "explanation": f"# Explanation of your code\n\nHere's the simplified code of your {request.language} code:\n\n1. It initializes variables\n2. It processes the input data\n3. It returns formatted result\n\nThis code appears to be {request.language} code that implements a function that processes data.",
+        "simplified": "// Simplified version of your code\nfunction simplifiedVersion() {\n  // Core functionality\n  return result;\n}",
+        "typescript": "// TypeScript version\nfunction typescriptVersion(): void {\n  // Core functionality with types\n  const result: string = '';\n  return result;\n}"
+    }
+    return explanation
 
 # Document ingestion endpoint
 @app.post("/api/ingest-document")
