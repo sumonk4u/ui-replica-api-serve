@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Bot, User, Send, Plus, X, RotateCcw, AlertTriangle } from 'lucide-react';
-import { toast } from '@/components/ui/sonner';
+import { toast } from "sonner";
 
 type Message = {
   id: string;
