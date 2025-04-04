@@ -11,6 +11,10 @@ import CodeConverter from "./pages/CodeConverter";
 import DocumentIngestion from "./pages/DocumentIngestion";
 import KnowledgeBase from "./pages/KnowledgeBase";
 import NotFound from "./pages/NotFound";
+import Login from "./pages/Login";
+import AuthCallback from "./pages/AuthCallback";
+import { AuthProvider } from "./components/AuthProvider";
+import PrivateRoute from "./components/PrivateRoute";
 
 // Add custom CSS for styling
 import "./styles/custom.css";
@@ -25,14 +29,46 @@ function App() {
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Layout><Home /></Layout>} />
-            <Route path="/chat" element={<Layout><Chat /></Layout>} />
-            <Route path="/code-converter" element={<Layout><CodeConverter /></Layout>} />
-            <Route path="/document-ingestion" element={<Layout><DocumentIngestion /></Layout>} />
-            <Route path="/knowledge-base" element={<Layout><KnowledgeBase /></Layout>} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <AuthProvider>
+            <Routes>
+              <Route path="/" element={<Layout><Home /></Layout>} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/auth/callback" element={<AuthCallback />} />
+              <Route 
+                path="/chat" 
+                element={
+                  <PrivateRoute>
+                    <Layout><Chat /></Layout>
+                  </PrivateRoute>
+                } 
+              />
+              <Route 
+                path="/code-converter" 
+                element={
+                  <PrivateRoute>
+                    <Layout><CodeConverter /></Layout>
+                  </PrivateRoute>
+                } 
+              />
+              <Route 
+                path="/document-ingestion" 
+                element={
+                  <PrivateRoute>
+                    <Layout><DocumentIngestion /></Layout>
+                  </PrivateRoute>
+                } 
+              />
+              <Route 
+                path="/knowledge-base" 
+                element={
+                  <PrivateRoute>
+                    <Layout><KnowledgeBase /></Layout>
+                  </PrivateRoute>
+                } 
+              />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>
