@@ -1,6 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Bot, User, Send, Plus, X, RotateCcw } from 'lucide-react';
+import { Bot, User, Send, Plus, X, RotateCcw, AlertTriangle } from 'lucide-react';
+import { toast } from '@/components/ui/sonner';
 
 type Message = {
   id: string;
@@ -13,6 +14,7 @@ const Chat = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [showNewChat, setShowNewChat] = useState(false);
 
@@ -38,8 +40,37 @@ const Chat = () => {
     scrollToBottom();
   }, [messages]);
 
+  // Check API availability on component mount
+  useEffect(() => {
+    checkApiAvailability();
+  }, []);
+
+  const checkApiAvailability = async () => {
+    try {
+      const response = await fetch('http://localhost:8000/api/health', { 
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      
+      if (response.ok) {
+        setApiError(null);
+      } else {
+        setApiError('API is not responding correctly');
+      }
+    } catch (error) {
+      console.error("API availability check failed:", error);
+      setApiError('Cannot connect to API server');
+    }
+  };
+
   const handleSendMessage = async () => {
     if (inputValue.trim() === '') return;
+
+    // Check if API is available before sending
+    if (apiError) {
+      toast.error("Cannot send message: API connection issue");
+      return;
+    }
 
     const newUserMessage: Message = {
       id: Date.now().toString(),
@@ -62,31 +93,34 @@ const Chat = () => {
         body: JSON.stringify({ message: inputValue }),
       });
 
+      if (!response.ok) {
+        throw new Error(`API responded with status: ${response.status}`);
+      }
+
       const data = await response.json();
 
-      setTimeout(() => {
-        const newBotMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          content: data.response || "I'm processing your request. I'll have an answer shortly.",
-          sender: 'bot',
-          timestamp: new Date(),
-        };
+      const newBotMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: data.response || "I'm processing your request. I'll have an answer shortly.",
+        sender: 'bot',
+        timestamp: new Date(),
+      };
 
-        setMessages(prev => [...prev, newBotMessage]);
-        setIsLoading(false);
-      }, 1000);
+      setMessages(prev => [...prev, newBotMessage]);
+      setIsLoading(false);
     } catch (error) {
       console.error("Error sending message:", error);
       
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: "I'm having trouble connecting to the server. Please try again later.",
+        content: "I'm having trouble connecting to the server. Please make sure the FastAPI server is running at http://localhost:8000.",
         sender: 'bot',
         timestamp: new Date(),
       };
 
       setMessages(prev => [...prev, errorMessage]);
       setIsLoading(false);
+      setApiError('Cannot connect to API server');
     }
   };
 
@@ -116,6 +150,12 @@ const Chat = () => {
     if (inputElement) {
       inputElement.focus();
     }
+  };
+
+  // Retry API connection
+  const retryApiConnection = () => {
+    checkApiAvailability();
+    toast.info("Checking API connection...");
   };
 
   return (
@@ -148,8 +188,8 @@ const Chat = () => {
           <h1 className="text-xl font-semibold">AI Chat</h1>
           <div className="flex items-center space-x-4">
             <div className="flex items-center">
-              <div className="mr-2 h-3 w-3 rounded-full bg-green-500"></div>
-              <span className="text-sm">Azure OpenAI (MSI)</span>
+              <div className={`mr-2 h-3 w-3 rounded-full ${apiError ? 'bg-red-500' : 'bg-green-500'}`}></div>
+              <span className="text-sm">{apiError ? 'API Connection Error' : 'Azure OpenAI (MSI)'}</span>
             </div>
             <button className="px-3 py-1 border border-gray-300 rounded-lg text-sm flex items-center gap-1 hover:bg-gray-50">
               <Plus size={16} />
@@ -161,6 +201,22 @@ const Chat = () => {
             </button>
           </div>
         </div>
+
+        {/* API Error Banner */}
+        {apiError && (
+          <div className="p-3 bg-red-50 border-b border-red-200 text-red-700 flex justify-between items-center">
+            <div className="flex items-center">
+              <AlertTriangle className="mr-2" size={16} />
+              <span>{apiError}. Please make sure the FastAPI server is running at http://localhost:8000.</span>
+            </div>
+            <button 
+              onClick={retryApiConnection}
+              className="p-1 bg-red-100 rounded-lg hover:bg-red-200 transition-colors"
+            >
+              <RotateCcw size={16} />
+            </button>
+          </div>
+        )}
 
         {/* Messages container */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
@@ -272,12 +328,13 @@ const Chat = () => {
               placeholder="Ask a question..."
               rows={1}
               style={{ maxHeight: '120px' }}
+              disabled={!!apiError}
             />
             <button
               onClick={handleSendMessage}
-              disabled={inputValue.trim() === '' || isLoading}
+              disabled={inputValue.trim() === '' || isLoading || !!apiError}
               className={`p-3 ${
-                inputValue.trim() === '' || isLoading 
+                inputValue.trim() === '' || isLoading || !!apiError
                   ? 'text-gray-400' 
                   : 'text-green-700 hover:text-green-800'
               }`}
@@ -285,6 +342,11 @@ const Chat = () => {
               <Send size={20} />
             </button>
           </div>
+          {apiError && (
+            <div className="mt-2 text-xs text-red-500">
+              Chat is disabled due to API connection issues. Please check if the FastAPI server is running.
+            </div>
+          )}
         </div>
       </div>
     </div>
