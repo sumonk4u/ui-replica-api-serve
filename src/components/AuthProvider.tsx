@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 import { authService } from '../services/authService';
 
 interface User {
@@ -18,31 +18,20 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// For testing - mock user
+const mockUser = {
+  email: "test@example.com",
+  name: "Test User",
+  username: "testuser"
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [state, setState] = useState({
-    isAuthenticated: authService.isAuthenticated(),
-    user: authService.getCurrentUser(),
-    loading: true,
+  // For testing - always authenticated
+  const [state] = useState({
+    isAuthenticated: true,
+    user: mockUser,
+    loading: false,
   });
-
-  useEffect(() => {
-    setState({
-      isAuthenticated: authService.isAuthenticated(),
-      user: authService.getCurrentUser(),
-      loading: false,
-    });
-
-    // Subscribe to auth state changes
-    const unsubscribe = authService.subscribe(() => {
-      setState({
-        isAuthenticated: authService.isAuthenticated(),
-        user: authService.getCurrentUser(),
-        loading: false,
-      });
-    });
-
-    return unsubscribe;
-  }, []);
 
   const value = {
     isAuthenticated: state.isAuthenticated,

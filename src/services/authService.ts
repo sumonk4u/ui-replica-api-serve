@@ -7,54 +7,32 @@ interface User {
   username: string;
 }
 
-interface AuthState {
-  isAuthenticated: boolean;
-  user: User | null;
-  token: string | null;
-}
-
-// Initial auth state
-const initialState: AuthState = {
-  isAuthenticated: false,
-  user: null,
-  token: null
+// Mock user for testing
+const mockUser = {
+  email: "test@example.com",
+  name: "Test User",
+  username: "testuser"
 };
 
-// Try to load auth state from localStorage
-const loadAuthState = (): AuthState => {
-  try {
-    const storedState = localStorage.getItem('authState');
-    if (storedState) {
-      return JSON.parse(storedState);
-    }
-  } catch (error) {
-    console.error('Failed to load auth state from localStorage:', error);
-  }
-  return initialState;
-};
-
-// Save auth state to localStorage
-const saveAuthState = (state: AuthState): void => {
-  try {
-    localStorage.setItem('authState', JSON.stringify(state));
-  } catch (error) {
-    console.error('Failed to save auth state to localStorage:', error);
-  }
+// Initial auth state - for testing, always authenticated
+const initialState = {
+  isAuthenticated: true,
+  user: mockUser,
+  token: "mock-token-for-testing"
 };
 
 // Current auth state
-let currentState = loadAuthState();
+let currentState = initialState;
 
 // Listeners for state changes
 const listeners: (() => void)[] = [];
 
 // Get current auth state
-const getAuthState = (): AuthState => currentState;
+const getAuthState = () => currentState;
 
 // Update auth state and notify listeners
-const updateAuthState = (newState: Partial<AuthState>): void => {
+const updateAuthState = (newState: Partial<typeof initialState>): void => {
   currentState = { ...currentState, ...newState };
-  saveAuthState(currentState);
   listeners.forEach(listener => listener());
 };
 
@@ -69,67 +47,35 @@ const subscribe = (listener: () => void): (() => void) => {
   };
 };
 
-// Login with redirect to PingFederate
+// Login - for testing, just show a toast
 const login = (): void => {
-  window.location.href = 'http://localhost:8000/api/auth/login';
+  toast.success("Test mode: Already logged in");
 };
 
-// Handle SSO callback
-const handleCallback = async (code: string): Promise<boolean> => {
-  try {
-    const response = await fetch('http://localhost:8000/api/auth/token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ code }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Authentication failed: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    updateAuthState({
-      isAuthenticated: true,
-      user: data.user,
-      token: data.access_token,
-    });
-
-    toast.success("Authentication successful!");
-    return true;
-  } catch (error) {
-    console.error('Authentication error:', error);
-    toast.error(`Authentication failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    return false;
-  }
+// Handle SSO callback - for testing, always successful
+const handleCallback = async (): Promise<boolean> => {
+  toast.success("Authentication successful (Test Mode)");
+  return true;
 };
 
-// Logout
+// Logout - for testing, shows toast but doesn't change state
 const logout = (): void => {
-  updateAuthState({
-    isAuthenticated: false,
-    user: null,
-    token: null,
-  });
-  toast.info("You've been logged out");
+  toast.info("Logout clicked (Test Mode - Still authenticated)");
 };
 
 // Get auth header for API requests
 const getAuthHeader = (): Record<string, string> => {
-  return currentState.token
-    ? { Authorization: `Bearer ${currentState.token}` }
-    : {};
+  return { Authorization: `Bearer ${currentState.token}` };
 };
 
-// Check if current user is authenticated
+// Check if current user is authenticated - for testing, always true
 const isAuthenticated = (): boolean => {
-  return currentState.isAuthenticated && !!currentState.token;
+  return true;
 };
 
-// Get current user
-const getCurrentUser = (): User | null => {
-  return currentState.user;
+// Get current user - for testing, always returns mock user
+const getCurrentUser = (): User => {
+  return mockUser;
 };
 
 export const authService = {
