@@ -28,13 +28,13 @@ openai_api_version = os.environ.get("OPENAI_API_VERSION", "2024-10-01-21")
 openai_embedding_model = os.environ.get("OPENAI_EMBEDDING_MODEL", "text-embedding-3-large")
 openai_chat_model = os.environ.get("OPENAI_CHAT_MODEL", "gpt-4o-2024-05-13-tpm")
 
-# Authentication configuration
-ping_federate_config = {
-    "issuer": os.environ.get("PING_ISSUER", "https://your-pingfederate-domain.com"),
-    "client_id": os.environ.get("PING_CLIENT_ID", "your-client-id"),
-    "client_secret": os.environ.get("PING_CLIENT_SECRET", "your-client-secret"),
-    "redirect_uri": os.environ.get("PING_REDIRECT_URI", "http://localhost:3000/auth/callback")
-}
+# Authentication configuration - COMMENTED OUT FOR TESTING
+# ping_federate_config = {
+#     "issuer": os.environ.get("PING_ISSUER", "https://your-pingfederate-domain.com"),
+#     "client_id": os.environ.get("PING_CLIENT_ID", "your-client-id"),
+#     "client_secret": os.environ.get("PING_CLIENT_SECRET", "your-client-secret"),
+#     "redirect_uri": os.environ.get("PING_REDIRECT_URI", "http://localhost:3000/auth/callback")
+# }
 
 # Azure Data Lake Storage Configuration
 adls_config = {
@@ -91,7 +91,7 @@ class SearchRequest(BaseModel):
 # Define API endpoints
 @app.get("/")
 def read_root():
-    return {"message": "RAG System API with SSO authentication"}
+    return {"message": "RAG System API without SSO authentication (testing mode)"}
 
 @app.post("/chat/")
 async def chat(request: ChatRequest):
@@ -152,12 +152,18 @@ async def search_documents(search_request: SearchRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/auth/verify")
-async def verify_token(token_data: dict):
-    # Verify the authentication token from PingFederate
-    # This would involve validating the token with the PingFederate server
-    
-    return {"valid": True, "username": "sample_user"}
+# Commented out SSO verification endpoint for testing
+# @app.post("/auth/verify")
+# async def verify_token(token_data: dict):
+#     # Verify the authentication token from PingFederate
+#     # This would involve validating the token with the PingFederate server
+#     
+#     return {"valid": True, "username": "sample_user"}
+
+# Add a new health check endpoint for testing API connectivity
+@app.get("/api/health")
+async def health_check():
+    return {"status": "ok", "message": "API server is running"}
 
 # Run the application directly when the script is executed
 if __name__ == "__main__":
