@@ -23,7 +23,8 @@ const AuthCallback = () => {
 
       try {
         setStatus('Processing authentication...');
-        const success = await authService.handleCallback(code);
+        // Call handleCallback without passing the code parameter
+        const success = await authService.handleCallback();
         
         if (success) {
           setStatus('Authentication successful! Redirecting...');
