@@ -8,12 +8,15 @@ import Layout from "./components/Layout";
 import Home from "./pages/Home";
 import Chat from "./pages/Chat";
 import CodeConverter from "./pages/CodeConverter";
+import CodeExplainer from "./pages/CodeExplainer";
+import AIRemediationAssistant from "./pages/AIRemediationAssistant";
 import DocumentIngestion from "./pages/DocumentIngestion";
 import KnowledgeBase from "./pages/KnowledgeBase";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import AuthCallback from "./pages/AuthCallback";
 import { AuthProvider } from "./components/AuthProvider";
+import PrivateRoute from "./components/PrivateRoute";
 
 // Add custom CSS for styling
 import "./styles/custom.css";
@@ -30,12 +33,15 @@ function App() {
         <BrowserRouter>
           <AuthProvider>
             <Routes>
-              <Route path="/" element={<Layout><Home /></Layout>} />
               <Route path="/login" element={<Login />} />
               <Route path="/auth/callback" element={<AuthCallback />} />
-              {/* Removed PrivateRoute wrapper to allow direct access during testing */}
+              
+              {/* Protected Routes */}
+              <Route path="/" element={<Layout><Home /></Layout>} />
               <Route path="/chat" element={<Layout><Chat /></Layout>} />
               <Route path="/code-converter" element={<Layout><CodeConverter /></Layout>} />
+              <Route path="/code-explainer" element={<Layout><CodeExplainer /></Layout>} />
+              <Route path="/ai-remediation-assistant" element={<Layout><AIRemediationAssistant /></Layout>} />
               <Route path="/document-ingestion" element={<Layout><DocumentIngestion /></Layout>} />
               <Route path="/knowledge-base" element={<Layout><KnowledgeBase /></Layout>} />
               <Route path="*" element={<NotFound />} />

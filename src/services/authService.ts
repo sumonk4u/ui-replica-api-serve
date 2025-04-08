@@ -9,9 +9,15 @@ interface User {
 
 // Mock user for testing
 const mockUser = {
-  email: "test@example.com",
-  name: "Test User",
-  username: "testuser"
+  email: "demo@example.com",
+  name: "Demo User",
+  username: "demouser"
+};
+
+// Demo credentials
+const demoCredentials = {
+  email: "demo@example.com",
+  password: "password"
 };
 
 // Initial auth state - for testing, always authenticated
@@ -47,9 +53,29 @@ const subscribe = (listener: () => void): (() => void) => {
   };
 };
 
-// Login - for testing, just show a toast
+// Login with SSO - for testing, just show a toast
 const login = (): void => {
   toast.success("Test mode: Already logged in");
+};
+
+// Login with email and password
+const loginWithEmailPassword = async (email: string, password: string): Promise<boolean> => {
+  // Simulate API call
+  await new Promise(resolve => setTimeout(resolve, 1000));
+  
+  // Check credentials (for demo)
+  if (email === demoCredentials.email && password === demoCredentials.password) {
+    toast.success("Login successful");
+    updateAuthState({
+      isAuthenticated: true,
+      user: mockUser,
+      token: "mock-token-for-testing"
+    });
+    return true;
+  }
+  
+  toast.error("Invalid email or password");
+  return false;
 };
 
 // Handle SSO callback - for testing, always successful
@@ -82,6 +108,7 @@ export const authService = {
   getAuthState,
   subscribe,
   login,
+  loginWithEmailPassword,
   handleCallback,
   logout,
   getAuthHeader,
