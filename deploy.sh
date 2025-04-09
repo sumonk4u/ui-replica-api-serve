@@ -15,6 +15,22 @@ const app = express();
 // Serve static files from the dist directory
 app.use(express.static(path.join(__dirname, 'dist')));
 
+// Proxy API requests to the FastAPI backend
+app.use('/api', (req, res, next) => {
+  // In production, API calls are handled by the same server on a different path
+  // The startup.sh script will run both the FastAPI server and this Express server
+  const apiServer = 'http://localhost:8000';
+  const apiPath = req.originalUrl.replace('/api', '');
+  
+  require('http').get(`${apiServer}${apiPath}`, (apiRes) => {
+    res.writeHead(apiRes.statusCode, apiRes.headers);
+    apiRes.pipe(res);
+  }).on('error', (e) => {
+    console.error(`API Proxy Error: ${e.message}`);
+    res.status(500).send('API Server Error');
+  });
+});
+
 // For any request that doesn't match a static file, serve index.html
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
@@ -28,7 +44,7 @@ EOL
 
 # Install express if not already installed
 echo "Installing express..."
-npm install express --save
+npm install express http-proxy-middleware --save
 
 echo "Setup complete!"
 echo "Run 'node server.js' to start the server on port 3000"
