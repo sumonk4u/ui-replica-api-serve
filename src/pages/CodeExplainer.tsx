@@ -7,6 +7,9 @@ import { FileText, Check, Code, AlertTriangle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from '@/hooks/use-toast';
 
+// Define the API_BASE_URL - change this to your Machine 2's IP address
+const API_BASE_URL = 'http://MACHINE2_IP:3000'; // Replace MACHINE2_IP with actual IP address
+
 const CodeExplainer = () => {
   const [code, setCode] = useState('');
   const [selectedAction, setSelectedAction] = useState('explain');
@@ -23,7 +26,7 @@ const CodeExplainer = () => {
 
   const checkApiAvailability = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/health', {
+      const response = await fetch(`${API_BASE_URL}/api/health`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -38,7 +41,7 @@ const CodeExplainer = () => {
         setApiStatus('unavailable');
         toast({
           title: "API Connection Error",
-          description: "Cannot connect to API server. Please make sure the FastAPI server is running at http://localhost:8000",
+          description: `Cannot connect to API server. Please make sure the FastAPI server is running at ${API_BASE_URL}`,
           variant: "destructive",
         });
       }
@@ -47,7 +50,7 @@ const CodeExplainer = () => {
       setApiStatus('unavailable');
       toast({
         title: "API Connection Error",
-        description: "Cannot connect to API server. Please make sure the FastAPI server is running at http://localhost:8000",
+        description: `Cannot connect to API server. Please make sure the FastAPI server is running at ${API_BASE_URL}`,
         variant: "destructive",
       });
     }
@@ -70,12 +73,10 @@ const CodeExplainer = () => {
     setResult('');
     
     try {
-      // In a real application, this would be an API call to the FastAPI backend
-      // For demonstration, we'll use a simulated response
       if (apiStatus === 'available') {
         // Try to make a real API call
         try {
-          const response = await fetch('http://localhost:8000/chat/', {
+          const response = await fetch(`${API_BASE_URL}/chat/`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -144,7 +145,7 @@ const CodeExplainer = () => {
           <AlertTitle>API Connection Error</AlertTitle>
           <AlertDescription>
             Cannot connect to API server. The application is running in offline mode with limited functionality.
-            Please make sure the FastAPI server is running at http://localhost:8000
+            Please make sure the FastAPI server is running at {API_BASE_URL}
           </AlertDescription>
         </Alert>
       )}

@@ -1,7 +1,9 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Bot, User, Send, Plus, X, RotateCcw, AlertTriangle } from 'lucide-react';
 import { toast } from "sonner";
+
+// Define the API_BASE_URL - change this to your Machine 2's IP address
+const API_BASE_URL = 'http://MACHINE2_IP:3000'; // Replace MACHINE2_IP with actual IP address
 
 type Message = {
   id: string;
@@ -47,7 +49,7 @@ const Chat = () => {
 
   const checkApiAvailability = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/health', { 
+      const response = await fetch(`${API_BASE_URL}/api/health`, { 
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
       });
@@ -59,7 +61,7 @@ const Chat = () => {
       }
     } catch (error) {
       console.error("API availability check failed:", error);
-      setApiError('Cannot connect to API server');
+      setApiError(`Cannot connect to API server at ${API_BASE_URL}`);
     }
   };
 
@@ -85,7 +87,7 @@ const Chat = () => {
 
     try {
       // In a real implementation, this would call your API
-      const response = await fetch('http://localhost:8000/api/chat', {
+      const response = await fetch(`${API_BASE_URL}/api/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -113,14 +115,14 @@ const Chat = () => {
       
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: "I'm having trouble connecting to the server. Please make sure the FastAPI server is running at http://localhost:8000.",
+        content: `I'm having trouble connecting to the server. Please make sure the FastAPI server is running at ${API_BASE_URL}.`,
         sender: 'bot',
         timestamp: new Date(),
       };
 
       setMessages(prev => [...prev, errorMessage]);
       setIsLoading(false);
-      setApiError('Cannot connect to API server');
+      setApiError(`Cannot connect to API server at ${API_BASE_URL}`);
     }
   };
 
@@ -207,7 +209,7 @@ const Chat = () => {
           <div className="p-3 bg-red-50 border-b border-red-200 text-red-700 flex justify-between items-center">
             <div className="flex items-center">
               <AlertTriangle className="mr-2" size={16} />
-              <span>{apiError}. Please make sure the FastAPI server is running at http://localhost:8000.</span>
+              <span>{apiError}. Please make sure the FastAPI server is running at {API_BASE_URL}.</span>
             </div>
             <button 
               onClick={retryApiConnection}
