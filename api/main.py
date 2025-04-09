@@ -11,10 +11,12 @@ import openai
 # Initialize FastAPI
 app = FastAPI()
 
-# Configure CORS for production
+# Configure CORS for development environment with specific IPs
 origins = [
     "http://localhost:3000",
     "http://localhost:8080",
+    "http://10.300.40.50:3000",  # Machine 1 IP
+    "http://10.20.30.405:3000",  # Machine 2 IP
     os.environ.get("WEBSITE_HOSTNAME", "*")  # Azure App Service hostname
 ]
 
@@ -76,5 +78,8 @@ async def chat(request: ChatRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# Add any functionality from find2.py here
+# ...
+
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=3000)

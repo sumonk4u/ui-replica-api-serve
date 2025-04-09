@@ -17,9 +17,8 @@ app.use(express.static(path.join(__dirname, 'dist')));
 
 // Proxy API requests to the FastAPI backend
 app.use('/api', (req, res, next) => {
-  // In production, API calls are handled by the same server on a different path
-  // The startup.sh script will run both the FastAPI server and this Express server
-  const apiServer = 'http://localhost:8000';
+  // In development, API calls are proxied to Machine 2
+  const apiServer = 'http://localhost:3000';
   const apiPath = req.originalUrl.replace('/api', '');
   
   require('http').get(`${apiServer}${apiPath}`, (apiRes) => {
