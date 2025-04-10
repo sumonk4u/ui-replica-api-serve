@@ -13,3 +13,7 @@ azure-mgmt-cognitiveservices==13.5.0
 openai==1.10.0
 numpy==1.26.0
 httpx==0.24.1
+redis==5.0.1
+pyodbc==5.0.1
+striptrtf==0.0.18
+azure-search-documents==11.4.0
