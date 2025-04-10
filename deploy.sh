@@ -1,34 +1,36 @@
 
 #!/bin/bash
 
+# Install Vite globally if not already installed
+echo "Checking for Vite..."
+if ! command -v vite &> /dev/null; then
+    echo "Installing Vite globally..."
+    npm install -g vite
+fi
+
 # Build the Vite app
 echo "Building Vite app..."
-npm run build
+npx vite build
 
 # Create a simple server to serve the app on port 3000
 echo "Creating server.js file..."
 cat > server.js << 'EOL'
 const express = require('express');
 const path = require('path');
+const { createProxyMiddleware } = require('http-proxy-middleware');
 const app = express();
 
 // Serve static files from the dist directory
 app.use(express.static(path.join(__dirname, 'dist')));
 
 // Proxy API requests to the FastAPI backend
-app.use('/api', (req, res, next) => {
-  // In development, API calls are proxied to Machine 2
-  const apiServer = 'http://localhost:3000';
-  const apiPath = req.originalUrl.replace('/api', '');
-  
-  require('http').get(`${apiServer}${apiPath}`, (apiRes) => {
-    res.writeHead(apiRes.statusCode, apiRes.headers);
-    apiRes.pipe(res);
-  }).on('error', (e) => {
-    console.error(`API Proxy Error: ${e.message}`);
-    res.status(500).send('API Server Error');
-  });
-});
+app.use('/api', createProxyMiddleware({
+  target: 'http://localhost:3000',
+  changeOrigin: true,
+  pathRewrite: {
+    '^/api': '' // Remove /api prefix when forwarding to the backend
+  }
+}));
 
 // For any request that doesn't match a static file, serve index.html
 app.get('*', (req, res) => {
@@ -41,8 +43,8 @@ app.listen(PORT, () => {
 });
 EOL
 
-# Install express if not already installed
-echo "Installing express..."
+# Install express and proxy middleware if not already installed
+echo "Installing express and http-proxy-middleware..."
 npm install express http-proxy-middleware --save
 
 echo "Setup complete!"
