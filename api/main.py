@@ -1,4 +1,3 @@
-
 import asyncio
 import os, subprocess, time
 import pyodbc, redis
@@ -34,13 +33,11 @@ search_index_name = "gptentern01index"
 # Initialize FastAPI
 app = FastAPI()
 
-# Configure CORS for development environment with specific IPs
+# Configure CORS for both development and production environments
 origins = [
-    "http://localhost:3000",
-    "http://localhost:8080",
-    "http://10.300.40.50:3000",  # Machine 1 IP
-    "http://10.20.30.405:3000",  # Machine 2 IP
-    os.environ.get("WEBSITE_HOSTNAME", "*")  # Azure App Service hostname
+    "http://localhost:3000",  # Local development frontend
+    "http://localhost:8080",  # Alternative local development port
+    os.environ.get("WEBSITE_HOSTNAME", "*")  # Azure Web App hostname
 ]
 
 app.add_middleware(
