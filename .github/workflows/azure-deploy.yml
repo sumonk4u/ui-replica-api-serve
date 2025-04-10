@@ -27,7 +27,7 @@ jobs:
       run: |
         npm ci
         
-    - name: Build React app
+    - name: Build React app to static directory
       run: npm run build
         
     - name: Install Python dependencies

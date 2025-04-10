@@ -8,8 +8,8 @@ if ! command -v vite &> /dev/null; then
     npm install -g vite
 fi
 
-# Build the Vite app
-echo "Building Vite app..."
+# Build the Vite app to static directory
+echo "Building Vite app to static directory..."
 npx vite build
 
 # Create a simple server to serve the app on port 3000
@@ -20,8 +20,8 @@ const path = require('path');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 const app = express();
 
-// Serve static files from the dist directory
-app.use(express.static(path.join(__dirname, 'dist')));
+// Serve static files from the static directory
+app.use(express.static(path.join(__dirname, 'static')));
 
 // Proxy API requests to the FastAPI backend
 app.use('/api', createProxyMiddleware({
@@ -34,7 +34,7 @@ app.use('/api', createProxyMiddleware({
 
 // For any request that doesn't match a static file, serve index.html
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+  res.sendFile(path.join(__dirname, 'static', 'index.html'));
 });
 
 const PORT = process.env.PORT || 3000;

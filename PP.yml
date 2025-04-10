@@ -1,0 +1,38 @@
+
+trigger:
+  - main
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  imageName: 'ai-knowledge-app'
+  azureServiceConnection: 'azure-service-connection'
+  containerRegistry: 'your-registry.azurecr.io'
+  dockerRegistryServiceConnection: 'docker-registry-service-connection'
+  tag: '$(Build.BuildId)'
+
+stages:
+  - stage: Build
+    jobs:
+      - job: BuildAndPublish
+        steps:
+          - task: Docker@2
+            inputs:
+              containerRegistry: $(dockerRegistryServiceConnection)
+              repository: $(imageName)
+              command: 'buildAndPush'
+              Dockerfile: './Dockerfile'
+              tags: |
+                $(tag)
+                latest
+
+  - stage: Deploy
+    jobs:
+      - job: DeployToAzure
+        steps:
+          - task: AzureWebAppContainer@1
+            inputs:
+              azureSubscription: $(azureServiceConnection)
+              appName: 'ai-knowledge-app'
+              containers: $(containerRegistry)/$(imageName):$(tag)
