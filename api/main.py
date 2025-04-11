@@ -161,10 +161,10 @@ async def chat_api(request: ChatRequest):
     print("request: ", request.prompt)
     # Note: Ensure that the token is defined if required for your API authentication process.
     # Uncomment and modify the next two lines if necessary:
-    # headers = {
-    #     "Authorization": f"Bearer {token}",
-    #     "Content-Type": "application/json"
-    # }
+     headers = {
+         "Authorization": f"Bearer {token}",
+         "Content-Type": "application/json"
+     }
     response = await client.chat.completions.create(
         model="gpt-4o-2024-05-13-tpm",
         temperature=0.3,
@@ -181,10 +181,10 @@ async def converter(request: ChatRequest):
     system_prompt = "You are an expert in converting legacy COBOL code to modern Python Code."
     user_prompt = f"Convert the following COBOL code to Python code:\n{request.prompt}"
     # Uncomment and modify headers if needed:
-    # headers = {
-    #     "Authorization": f"Bearer {token}",
-    #     "Content-Type": "application/json"
-    # }
+     headers = {
+         "Authorization": f"Bearer {token}",
+         "Content-Type": "application/json"
+     }
     response = await client.chat.completions.create(
         model="gpt-4o-2024-05-13-tpm",
         temperature=0.3,
