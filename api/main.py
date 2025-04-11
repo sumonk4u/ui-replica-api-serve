@@ -13,12 +13,12 @@ import requests
 import httpx
 import openai
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import Form, FastAPI, HTTPException, UploadFile, File
+from fastapi import Request, Form, FastAPI, HTTPException, UploadFile, File
+from fastapi.responses import JSONResponse
 from typing import List, Dict, Optional
 import re
 import json
-from striptrtf.striptrtf import rtf_to_text
-from fastapi.responses import JSONResponse
+from striprtf.striprtf import rtf_to_text
 
 # Azure Configuration
 subscription_id = os.environ.get("AZURE_SUBSCRIPTION_ID", "210da3-aff")
@@ -47,7 +47,7 @@ app.add_middleware(
     CORSMiddleware,
     # Uncomment the line below if you want to allow multiple origins; for now, we'll allow your UI:
     # allow_origins=origins,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["http://localhost:5173"], # allow_origins=["http://10.233.186.17:3000"]
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -77,10 +77,16 @@ search_client = SearchClient(
     credential=msi,
 )
 
+# ----------------------------
+# Request Models
+# ----------------------------
 class ChatRequest(BaseModel):
     prompt: str
     max_tokens: int = 10000
 
+# ----------------------------
+# Utility Functions
+# ----------------------------
 def estimate_token_count(text: str) -> int:
     """Estimate token count. Roughly 4 chars per token for English text."""
     return len(text) // 4
@@ -112,6 +118,14 @@ def fetch_vector_search_results(embedding: list):
     except Exception as e:
         raise RuntimeError(f"Vector search failed: {str(e)}")
 
+def optimize_content_for_tokens(content, max_length=10000):
+    if len(content) <= max_length:
+        return content
+    half_max = max_length // 2
+    beginning = content[:half_max]
+    end = content[-half_max:]
+    return f"{beginning}\n\n[...{len(content) - max_length} characters truncated...]\n\n{end}"
+
 # ----------------------------
 # HEALTH CHECK ENDPOINTS
 # ----------------------------
@@ -126,15 +140,10 @@ def health():
 # ----------------------------
 # CHAT ENDPOINTS
 # ----------------------------
-
 @app.post("/chat/context")
 async def chat_context(request: ChatRequest):
     user_prompt = request.prompt
-    print(f"request: ", user_prompt)
-    payload = {
-        "messages": [{"role": "user", "content": user_prompt}],
-        "max_tokens": request.max_tokens
-    }
+    print("Context chat request:", user_prompt)
     embedding = await generate_embedding(user_prompt)
     loop = asyncio.get_running_loop()
     matched_docs = await loop.run_in_executor(None, fetch_vector_search_results, embedding)
@@ -144,7 +153,7 @@ async def chat_context(request: ChatRequest):
         {"role": "system", "content": "You are a helpful assistant from Enterprise Data Product Team. Answer a summary only based on the provided context from the Data Products (DP) Documents."},
         {"role": "user", "content": f"Context:\n{context}\n\nQuestion: {user_prompt}"}
     ]
-    print("message (Context): ", messages)
+    print("Context messages:", messages)
     response = await client.chat.completions.create(
         model=openai_lang_model,
         messages=messages
@@ -153,22 +162,36 @@ async def chat_context(request: ChatRequest):
         "answer": response.choices[0].message.content.strip(),
         "citations": matched_docs
     }
-    print("reply:: ", reply)
     return reply
 
+# Updated chat endpoint: expects JSON payload matching ChatRequest model
 @app.post("/api/chat")
-async def chat_api(request: ChatRequest):
-    print("request: ", request.prompt)
-    # Note: Ensure that the token is defined if required for your API authentication process.
-    # Uncomment and modify the next two lines if necessary:
-     headers = {
-         "Authorization": f"Bearer {token}",
-         "Content-Type": "application/json"
-     }
+async def chat_api(request: Request):
+    # Expect incoming request as JSON
+    try:
+        data = await request.json()
+        print("Received payload for /api/chat:", data)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid JSON: {str(e)}")
+    
+    # Validate incoming payload against ChatRequest model
+    try:
+        chat_request = ChatRequest(**data)
+    except Exception as e:
+        raise HTTPException(status_code=422, detail=f"Payload validation error: {str(e)}")
+    
+    print("Processing chat_api with prompt:", chat_request.prompt)
+    
+    # Uncomment and modify headers if your API requires token-based authentication
+    # headers = {
+    #     "Authorization": f"Bearer {token}",
+    #     "Content-Type": "application/json"
+    # }
+    
     response = await client.chat.completions.create(
         model="gpt-4o-2024-05-13-tpm",
         temperature=0.3,
-        messages=[{"role": "user", "content": request.prompt}],
+        messages=[{"role": "user", "content": chat_request.prompt}],
         stream=False
     )
     if response.status_code != 200:
@@ -177,14 +200,14 @@ async def chat_api(request: ChatRequest):
 
 @app.post("/converter/")
 async def converter(request: ChatRequest):
-    print("request: ", request.prompt)
+    print("Converter request prompt:", request.prompt)
     system_prompt = "You are an expert in converting legacy COBOL code to modern Python Code."
     user_prompt = f"Convert the following COBOL code to Python code:\n{request.prompt}"
-    # Uncomment and modify headers if needed:
-     headers = {
-         "Authorization": f"Bearer {token}",
-         "Content-Type": "application/json"
-     }
+    # Uncomment and modify headers if necessary:
+    # headers = {
+    #     "Authorization": f"Bearer {token}",
+    #     "Content-Type": "application/json"
+    # }
     response = await client.chat.completions.create(
         model="gpt-4o-2024-05-13-tpm",
         temperature=0.3,
@@ -208,8 +231,7 @@ class CodeExplainRequest(BaseModel):
 
 @app.post("/code-explainer/")
 async def code_explainer(request: CodeExplainRequest):
-    print(f"Received request for code explanation: {request.action}")
-    # Choose system and user prompts based on action
+    print("Received code explain request for action:", request.action)
     if request.action == "simplify":
         system_prompt = "You are a senior software engineer who simplifies complex code without changing functionality."
         user_prompt = f"Simplify this code:\n{request.code}"
@@ -249,7 +271,6 @@ class ArcherRequest(BaseModel):
     max_tokens: int = 100
 
 def ignore_rtf_to_text(rtf_content):
-    """Convert RTF content to Plain Text, stripping all formatting."""
     text = re.sub(r'^\{\\rtf1.*\}\s*', '', rtf_content)
     text = re.sub(r'\\[a-zA-Z0-9]+(-?[0-9]+)?\\s?', '', text)
     text = re.sub(r'\\\'[0-9a-fA-F]{2}', '', text)
@@ -264,14 +285,6 @@ def ignore_rtf_to_text(rtf_content):
     text = re.sub(r'\n\s*\n', '\n\n', text)
     text = re.sub(r'\\([{}\\])', r'\1', text)
     return text.strip()
-
-def optimize_content_for_tokens(content, max_length=10000):
-    if len(content) <= max_length:
-        return content
-    half_max = max_length // 2
-    beginning = content[:half_max]
-    end = content[-half_max:]
-    return f"{beginning}\n\n[...{len(content) - max_length} characters truncated...]\n\n{end}"
 
 @app.post("/archer/")
 async def process_remediation_files(
@@ -346,12 +359,12 @@ Return the response with clear sections for:
 
     try:
         api_url = f"https://{openai_account_name}.openai.azure.com/openai/deployments/gpt-4o-2024-05-13-tpm/chat/completions?api-version=2023-01-01-preview"
-        print("apiUrl:: ", api_url)
+        print("apiUrl::", api_url)
         response = await client.chat.completions.create(
             model="gpt-4o-2024-05-13-tpm",
             temperature=0,
             messages=[
-                {"role": "system", "content": """You are a strict GRC Analyst and expert in compliance. Evaluate remediation plans against provided documents and return detailed feedback."""},
+                {"role": "system", "content": "You are a strict GRC Analyst and expert in compliance. Evaluate remediation plans against provided documents and return detailed feedback."},
                 {"role": "user", "content": prompt}
             ],
             stream=False
@@ -361,16 +374,6 @@ Return the response with clear sections for:
     except Exception as e:
         print(f"Error calling OpenAI: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error processing with OpenAI: {str(e)}")
-
-def optimize_content(content: str, max_tokens: int = 3000) -> str:
-    estimated_tokens = estimate_token_count(content)
-    if estimated_tokens <= max_tokens:
-        return content
-    char_limit = max_tokens * 4
-    half_max = char_limit // 2
-    beginning = content[:half_max]
-    end = content[-half_max:]
-    return f"{beginning}\n\n[...{estimated_tokens - max_tokens} tokens truncated...]\n\n{end}"
 
 @app.post("/archer/rewrite")
 async def rewrite_remediation(
@@ -387,7 +390,7 @@ async def rewrite_remediation(
     file_content = content.decode("utf-8")
     if remediationPlan.filename.lower().endswith('.rtf'):
         file_content = rtf_to_text(file_content)
-    optimized_plan = optimize_content(file_content, 2000)
+    optimized_plan = optimize_content_for_tokens(file_content, 2000)
     system_prompt = """
 You are a compliance expert tasked with improving a remediation plan based on analysis feedback.
 Consider compliance requirements, timelines, accountability, and validation steps.
