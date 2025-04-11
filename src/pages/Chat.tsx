@@ -22,6 +22,7 @@ const Chat = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
   const [showNewChat, setShowNewChat] = useState(false);
+  const [isLovablePreview] = useState(window.location.hostname.includes('lovableproject.com'));
 
   // Initial bot message
   useEffect(() => {
@@ -43,6 +44,12 @@ const Chat = () => {
   }, []);
 
   const checkApiAvailability = async () => {
+    if (isLovablePreview) {
+      // In Lovable preview, we'll simulate API availability
+      setApiError(null);
+      return;
+    }
+    
     try {
       const response = await fetch(`${API_BASE_URL}/api/health`, { 
         method: 'GET',
@@ -61,6 +68,12 @@ const Chat = () => {
   };
 
   const handleSendMessage = async (inputMessage: string) => {
+    // For Lovable preview, use mock responses
+    if (isLovablePreview) {
+      handleMockResponse(inputMessage);
+      return;
+    }
+
     // Check if API is available before sending
     if (apiError) {
       toast.error("Cannot send message: API connection issue");
@@ -117,6 +130,47 @@ const Chat = () => {
     }
   };
 
+  // Handle mock responses for Lovable preview environment
+  const handleMockResponse = (inputMessage: string) => {
+    const newUserMessage: Message = {
+      id: Date.now().toString(),
+      content: inputMessage,
+      sender: 'user',
+      timestamp: new Date(),
+    };
+
+    setMessages(prev => [...prev, newUserMessage]);
+    setIsLoading(true);
+
+    // Simulate API delay
+    setTimeout(() => {
+      let responseContent = "I'm not sure how to respond to that. Could you provide more details?";
+      
+      // Generate contextual responses based on input
+      if (inputMessage.toLowerCase().includes('hello') || inputMessage.toLowerCase().includes('hi')) {
+        responseContent = "Hello there! How can I assist you with your knowledge base or document processing needs today?";
+      } else if (inputMessage.toLowerCase().includes('help')) {
+        responseContent = "I can help you with several tasks:\n\n- Answering questions about your knowledge base\n- Converting code between languages\n- Explaining complex code\n- Processing and analyzing documents\n- AI remediation assistance\n\nWhat would you like help with?";
+      } else if (inputMessage.toLowerCase().includes('document') || inputMessage.toLowerCase().includes('upload')) {
+        responseContent = "To upload documents, navigate to the Document Ingestion page from the sidebar menu. You can upload various file formats including PDFs, Word documents, and text files. Once uploaded, the system will process them and add them to your knowledge base.";
+      } else if (inputMessage.toLowerCase().includes('code')) {
+        responseContent = "I can help with code conversion and explanation. Use the Code Converter tool to transform code between different languages, or the Code Explainer to get detailed explanations of complex code snippets.";
+      } else if (inputMessage.toLowerCase().includes('api')) {
+        responseContent = "This chat interface connects to a FastAPI backend that provides various AI capabilities. For local development, make sure the API server is running on port 3000. Check the console for any connection issues.";
+      }
+
+      const newBotMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: responseContent,
+        sender: 'bot',
+        timestamp: new Date(),
+      };
+
+      setMessages(prev => [...prev, newBotMessage]);
+      setIsLoading(false);
+    }, 1500);
+  };
+
   const startNewChat = () => {
     setMessages([
       {
@@ -156,11 +210,13 @@ const Chat = () => {
           onClearChat={handleClearChat}
         />
 
-        <ApiErrorBanner 
-          error={apiError || ''} 
-          apiBaseUrl={API_BASE_URL} 
-          onRetry={retryApiConnection} 
-        />
+        {!isLovablePreview && apiError && (
+          <ApiErrorBanner 
+            error={apiError || ''} 
+            apiBaseUrl={API_BASE_URL} 
+            onRetry={retryApiConnection} 
+          />
+        )}
 
         <ChatMessageList 
           messages={messages} 
@@ -173,7 +229,7 @@ const Chat = () => {
         <ChatInput 
           onSendMessage={handleSendMessage}
           isLoading={isLoading}
-          apiError={apiError}
+          apiError={isLovablePreview ? null : apiError}
           handleQuickQuestion={handleQuickQuestion}
           isInitialState={messages.length === 1}
         />
