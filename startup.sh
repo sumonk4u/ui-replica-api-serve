@@ -6,8 +6,8 @@ echo "Starting deployment process..."
 
 # Install Node.js dependencies if not already installed
 if [ ! -d "node_modules" ]; then
-  echo "Installing Node.js dependencies..."
-  npm ci --only=production
+  echo "Installing Node.js dependencies including dev dependencies..."
+  npm ci
 fi
 
 # Install Python dependencies if not already installed
