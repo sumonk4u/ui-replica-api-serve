@@ -13,13 +13,13 @@ fi
 # Install Python dependencies if not already installed
 if [ ! -d "api/__pycache__" ]; then
   echo "Installing Python dependencies..."
-  pip install --no-cache-dir -r api/requirements.txt
+  pip install --no-cache-dir -r requirements.txt
 fi
 
 # Start the FastAPI server
 echo "Starting FastAPI backend..."
 cd /home/site/wwwroot
-gunicorn api.main:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:3000 &
+python -m uvicorn api.main:app --workers 2 --host 0.0.0.0 --port 3000 &
 
 # Wait for backend to start
 sleep 5

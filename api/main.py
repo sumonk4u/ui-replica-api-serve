@@ -45,9 +45,7 @@ origins = [
 
 app.add_middleware(
     CORSMiddleware,
-    # Uncomment the line below if you want to allow multiple origins; for now, we'll allow your UI:
-    # allow_origins=origins,
-    allow_origins=["http://localhost:5173"], # allow_origins=["http://10.233.186.17:3000"]
+    allow_origins=["*"],  # Allow all origins for development
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -81,7 +79,7 @@ search_client = SearchClient(
 # Request Models
 # ----------------------------
 class ChatRequest(BaseModel):
-    prompt: str
+    message: str  # Changed from 'prompt' to 'message' to match frontend
     max_tokens: int = 10000
 
 # ----------------------------
@@ -129,20 +127,20 @@ def optimize_content_for_tokens(content, max_length=10000):
 # ----------------------------
 # HEALTH CHECK ENDPOINTS
 # ----------------------------
-@app.get("/api/ping")
-def ping():
-    return {"status": "ok"}
-
-@app.get("/api/health")
+@app.get("/health")
 def health():
     return {"status": "healthy"}
+
+@app.get("/api/health")
+def api_health():
+    return {"status": "ok", "message": "API server is running"}
 
 # ----------------------------
 # CHAT ENDPOINTS
 # ----------------------------
 @app.post("/chat/context")
 async def chat_context(request: ChatRequest):
-    user_prompt = request.prompt
+    user_prompt = request.message
     print("Context chat request:", user_prompt)
     embedding = await generate_embedding(user_prompt)
     loop = asyncio.get_running_loop()
@@ -166,48 +164,34 @@ async def chat_context(request: ChatRequest):
 
 # Updated chat endpoint: expects JSON payload matching ChatRequest model
 @app.post("/api/chat")
-async def chat_api(request: Request):
-    # Expect incoming request as JSON
+async def chat_api(request: ChatRequest):
+    print(f"Processing chat_api with message: {request.message}")
+    
     try:
-        data = await request.json()
-        print("Received payload for /api/chat:", data)
+        response = await client.chat.completions.create(
+            model="gpt-4o-2024-05-13-tpm",
+            temperature=0.3,
+            messages=[{"role": "user", "content": request.message}],
+            stream=False
+        )
+        
+        # Extract the response content
+        content = response.choices[0].message.content
+        
+        return {"response": content}
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Invalid JSON: {str(e)}")
-    
-    # Validate incoming payload against ChatRequest model
-    try:
-        chat_request = ChatRequest(**data)
-    except Exception as e:
-        raise HTTPException(status_code=422, detail=f"Payload validation error: {str(e)}")
-    
-    print("Processing chat_api with prompt:", chat_request.prompt)
-    
-    # Uncomment and modify headers if your API requires token-based authentication
-    # headers = {
-    #     "Authorization": f"Bearer {token}",
-    #     "Content-Type": "application/json"
-    # }
-    
-    response = await client.chat.completions.create(
-        model="gpt-4o-2024-05-13-tpm",
-        temperature=0.3,
-        messages=[{"role": "user", "content": chat_request.prompt}],
-        stream=False
-    )
-    if response.status_code != 200:
-        raise HTTPException(status_code=response.status_code, detail=response.text)
-    return response.json()
+        print(f"Error in chat_api: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error processing request: {str(e)}")
 
+# ----------------------------
+# CODE CONVERTER ENDPOINT
+# ----------------------------
 @app.post("/converter/")
 async def converter(request: ChatRequest):
-    print("Converter request prompt:", request.prompt)
+    print("Converter request message:", request.message)
     system_prompt = "You are an expert in converting legacy COBOL code to modern Python Code."
-    user_prompt = f"Convert the following COBOL code to Python code:\n{request.prompt}"
-    # Uncomment and modify headers if necessary:
-    # headers = {
-    #     "Authorization": f"Bearer {token}",
-    #     "Content-Type": "application/json"
-    # }
+    user_prompt = f"Convert the following COBOL code to Python code:\n{request.message}"
+    
     response = await client.chat.completions.create(
         model="gpt-4o-2024-05-13-tpm",
         temperature=0.3,
@@ -217,9 +201,7 @@ async def converter(request: ChatRequest):
         ],
         stream=False
     )
-    if response.status_code != 200:
-        raise HTTPException(status_code=response.status_code, detail=response.text)
-    return response.json()
+    return {"response": response.choices[0].message.content}
 
 # ----------------------------
 # CODE EXPLAINER ENDPOINT
