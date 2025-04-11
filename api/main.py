@@ -42,7 +42,8 @@ origins = [
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    #allow_origins=origins,
+    allow_origins=["http://localhost:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -146,7 +147,7 @@ def read_root():
     token=get_bearer_token_provider(msi, "https://cognitiveservices.azure.com/.default")
     #print("OpenAI embedding:", client.embeddings.create(input=["The quick brown fox jumped over the lazy dog"], model=openai_embedding_model).data[0].embedding[:3])
 
-@app.post("/chat/")
+@app.post("/api/chat/")
 async def chat(request: ChatRequest):
     print("request: ",request.prompt)
     headers = {
