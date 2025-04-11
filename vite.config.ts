@@ -7,22 +7,20 @@ import { componentTagger } from "lovable-tagger";
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
-   proxy: {
-     '/api': {
-       target: 'http://127.0.0.1:3000',
-       changeOrigin: true,
-       secure: false,
+    proxy: {
+      '/api': {
+        target: 'http://127.0.0.1:3000',
+        changeOrigin: true,
+        secure: false,
+      },
     },
   },
-},
-,
   build: {
-    outDir: "static", // Change output directory from dist to static
+    outDir: "static",
   },
   plugins: [
     react(),
-    mode === 'development' &&
-    componentTagger(),
+    mode === 'development' && componentTagger(),
   ].filter(Boolean),
   resolve: {
     alias: {
@@ -30,3 +28,4 @@ export default defineConfig(({ mode }) => ({
     },
   },
 }));
+
