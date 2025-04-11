@@ -13,7 +13,7 @@ import requests
 import httpx
 import openai
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import Form, FastAPI, HTTPException, UploadFile, File
 from typing import List, Dict, Optional
 import re
 import json
