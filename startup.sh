@@ -27,4 +27,5 @@ echo "Backend started"
 
 # Start the Express server to serve static files and proxy API requests
 echo "Starting Express server for frontend..."
+cd /home/site/wwwroot
 node server.js
